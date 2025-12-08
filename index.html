@@ -65,10 +65,10 @@
         document.body.appendChild( renderer.domElement );
         
         //.. setup lights
-        var ambientLight = new THREE.AmbientLight(0x555555);
+        var ambientLight = new THREE.AmbientLight();
         scene.add( ambientLight );
  
-        var light = new THREE.DirectionalLight( 0xffeedd);
+        var light = new THREE.DirectionalLight(0xffeedd);
         light.position.set( 0, 0, 1 );
         scene.add( light );
  
@@ -89,32 +89,6 @@
           allObjects.push(obj);
           if (obj.isMesh) meshes.push(obj);
         });
-
-        //rain creation
-        // let positions = [];
-        // let sizes = [];
-        // rainGeo = new THREE.BufferGeometry();
-        // for(let i=0;i<rainCount;i++) {
-        //     positions.push(Math.random() * 400 -200);
-        //     positions.push(Math.random() * 500 - 250);
-        //     positions.push(Math.random() * 400 - 200);
-        //     sizes.push(30);
-        // }
-        // rainGeo.setAttribute(
-        //     "position",
-        //     new THREE.BufferAttribute(new Float32Array(positions),3)
-        // );
-
-        // rainMaterial = new THREE.PointsMaterial({
-        //     color: 0x000000,//0xaaaaaa for white, 0x000000 for black
-        //     size: 0.5,
-        //     transparent: true
-        // });
-        // rain = new THREE.Points(rainGeo,rainMaterial);
-        // console.log("created the rain");
-        // console.log(rain);
-        // scene.add(rain);
-        //rain creation end===========================================
 
         console.log("All objects:", allObjects);
         console.log("Mesh objects:", meshes);

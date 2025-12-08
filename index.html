@@ -33,10 +33,10 @@
       import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
 
       import { createCity } from './src/city.js';
-      import { createRain } from './src/storm.js';
+      //import { createRain } from './src/storm.js';
 
       var renderer, controls, scene, camera, effect;
-      var rain, rainGeo, rainMaterial, rainCount = 15000;
+      //var rain, rainGeo, rainMaterial, rainCount = 15000;
       window['CONTROLS'] = {
       raycaster: new THREE.Raycaster(),
       mouse: new THREE.Vector2(),
@@ -65,8 +65,8 @@
         document.body.appendChild( renderer.domElement );
         
         //.. setup lights
-        var ambientLight = new THREE.AmbientLight(0x555555);
-        scene.add( ambientLight );
+        //var ambientLight = new THREE.AmbientLight(0x555555);
+        //scene.add( ambientLight );
  
         var light = new THREE.DirectionalLight( 0xffeedd);
         light.position.set( 0, 0, 1 );
@@ -80,7 +80,7 @@
         //set up environment
         const building = await createCity(scene);
         //const rain = await createRain(scene);
-
+        /*
         //check objects
         let allObjects = [];
         let meshes = [];
@@ -89,8 +89,8 @@
           allObjects.push(obj);
           if (obj.isMesh) meshes.push(obj);
         });
-
-        //rain creation
+        */
+        /*//rain creation
         let positions = [];
         let sizes = [];
         rainGeo = new THREE.BufferGeometry();
@@ -115,20 +115,20 @@
         console.log(rain);
         scene.add(rain);
         //rain creation end===========================================
-
-        console.log("All objects:", allObjects);
-        console.log("Mesh objects:", meshes);
-        console.log("Mesh count:", meshes.length);
+        */
+        //console.log("All objects:", allObjects);
+        //console.log("Mesh objects:", meshes);
+        //console.log("Mesh count:", meshes.length);
         
-        building.allObjects = allObjects;
-        building.meshes = meshes;
+        //building.allObjects = allObjects;
+        //building.meshes = meshes;
 
         animate();
 
       };
       
       window.addEventListener("pointerdown", onClick);
-
+      /*
       function onClick(e) {
         // get mouse position
         CONTROLS.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -160,20 +160,20 @@
           obj.material.emissive.set(0x4444ff);
         }
       };
-
+      */
       function animate() {
         requestAnimationFrame( animate );
 
         // rotate object
-        if (CONTROLS.selectedObject) {
-          CONTROLS.selectedObject.rotation.y += 0.02;
-        }
-
-        //rain
+        //if (CONTROLS.selectedObject) {
+          //CONTROLS.selectedObject.rotation.y += 0.02;
+        //}
+        /*
+        rain
         rainGeo.verticesNeedUpdate = true;
         rain.position.y +=0.222;
         if (rain.position.z > 200) rain.position.z = 0;
-
+        */
         controls.update();
         renderer.render(scene, camera);
       };

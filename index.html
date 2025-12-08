@@ -2,7 +2,7 @@
   <head>
     <style>
       html, body { 
-        background-color:#000;
+        background-color:#ffffff;
         margin: 0;
         padding: 0;
         height: 100%;
@@ -33,10 +33,10 @@
       import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
 
       import { createCity } from './src/city.js';
-      //import { createRain } from './src/storm.js';
+      import { createRain } from './src/storm.js';
 
       var renderer, controls, scene, camera, effect;
-      //var rain, rainGeo, rainMaterial, rainCount = 15000;
+      var rain, rainGeo, rainMaterial, rainCount = 15000;
       window['CONTROLS'] = {
       raycaster: new THREE.Raycaster(),
       mouse: new THREE.Vector2(),
@@ -65,10 +65,10 @@
         document.body.appendChild( renderer.domElement );
         
         //.. setup lights
-        //var ambientLight = new THREE.AmbientLight(0x555555);
-        //scene.add( ambientLight );
+        var ambientLight = new THREE.AmbientLight();
+        scene.add( ambientLight );
  
-        var light = new THREE.DirectionalLight( 0xffeedd);
+        var light = new THREE.DirectionalLight(0xffeedd);
         light.position.set( 0, 0, 1 );
         scene.add( light );
  
@@ -79,8 +79,8 @@
 
         //set up environment
         const building = await createCity(scene);
-        //const rain = await createRain(scene);
-        /*
+        rain = await createRain(scene);
+
         //check objects
         let allObjects = [];
         let meshes = [];
@@ -89,46 +89,20 @@
           allObjects.push(obj);
           if (obj.isMesh) meshes.push(obj);
         });
-        */
-        /*//rain creation
-        let positions = [];
-        let sizes = [];
-        rainGeo = new THREE.BufferGeometry();
-        for(let i=0;i<rainCount;i++) {
-            positions.push(Math.random() * 400 -200);
-            positions.push(Math.random() * 500 - 250);
-            positions.push(Math.random() * 400 - 200);
-            sizes.push(30);
-        }
-        rainGeo.setAttribute(
-            "position",
-            new THREE.BufferAttribute(new Float32Array(positions),3)
-        );
 
-        rainMaterial = new THREE.PointsMaterial({
-            color: 0x000000,//0xaaaaaa for white, 0x000000 for black
-            size: 0.5,
-            transparent: true
-        });
-        rain = new THREE.Points(rainGeo,rainMaterial);
-        console.log("created the rain");
-        console.log(rain);
-        scene.add(rain);
-        //rain creation end===========================================
-        */
-        //console.log("All objects:", allObjects);
-        //console.log("Mesh objects:", meshes);
-        //console.log("Mesh count:", meshes.length);
+        console.log("All objects:", allObjects);
+        console.log("Mesh objects:", meshes);
+        console.log("Mesh count:", meshes.length);
         
-        //building.allObjects = allObjects;
-        //building.meshes = meshes;
+        building.allObjects = allObjects;
+        building.meshes = meshes;
 
         animate();
 
       };
       
       window.addEventListener("pointerdown", onClick);
-      /*
+
       function onClick(e) {
         // get mouse position
         CONTROLS.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -160,20 +134,20 @@
           obj.material.emissive.set(0x4444ff);
         }
       };
-      */
+
       function animate() {
         requestAnimationFrame( animate );
 
         // rotate object
-        //if (CONTROLS.selectedObject) {
-          //CONTROLS.selectedObject.rotation.y += 0.02;
-        //}
-        /*
-        rain
-        rainGeo.verticesNeedUpdate = true;
+        if (CONTROLS.selectedObject) {
+          CONTROLS.selectedObject.rotation.y += 0.02;
+        }
+
+        //rain
+        rain.geometry.verticesNeedUpdate = true;
         rain.position.y +=0.222;
-        if (rain.position.z > 200) rain.position.z = 0;
-        */
+        if (rain.position.y > 200) rain.position.y = 0;
+
         controls.update();
         renderer.render(scene, camera);
       };

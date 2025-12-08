@@ -36,8 +36,8 @@
       import { createRain } from './src/storm.js';
 
       var renderer, controls, scene, camera, effect;
-      var rain
-      window['SCENE'] = {
+      var rain, rainGeo, rainMaterial, rainCount = 15000;
+      window['CONTROLS'] = {
       raycaster: new THREE.Raycaster(),
       mouse: new THREE.Vector2(),
       selectedObject: null,
@@ -131,13 +131,13 @@
 
       function onClick(e) {
         // get mouse position
-        SCENE.mouse.x =  (event.clientX / window.innerWidth) * 2 - 1;
-        SCENE.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        CONTROLS.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        CONTROLS.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
         // raycast from camera using current mouse position
-        SCENE.raycaster.setFromCamera(SCENE.mouse, camera);
+        CONTROLS.raycaster.setFromCamera(CONTROLS.mouse, camera);
 
-        var click = SCENE.raycaster.intersectObjects(scene.children, true);
+        var click = CONTROLS.raycaster.intersectObjects(scene.children, true);
 
         if (click.length > 0) {
         const clickObject = click[0].object;
@@ -148,12 +148,13 @@
         }
       };
 
+      //select object group
       function setSelectedObject(obj) {
-        if (SCENE.selectedObject && SCENE.selectedObject.material?.emissive) {
-          SCENE.selectedObject.material.emissive.set(0x000000);
+        if (CONTROLS.selectedObject && CONTROLS.selectedObject.material?.emissive) {
+          CONTROLS.selectedObject.material.emissive.set(0x000000);
         }
 
-        SCENE.selectedObject = obj;
+        CONTROLS.selectedObject = obj;
 
         if (obj.material?.emissive) {
           obj.material.emissive.set(0x4444ff);
@@ -163,8 +164,9 @@
       function animate() {
         requestAnimationFrame( animate );
 
-        if (SCENE.selectedObject) {
-          SCENE.selectedObject.rotation.y += 0.02;
+        // rotate object
+        if (CONTROLS.selectedObject) {
+          CONTROLS.selectedObject.rotation.y += 0.02;
         }
 
         //rain
@@ -173,7 +175,6 @@
         if (rain.position.y > 200) rain.position.y = 0;
 
         controls.update();
-        
         renderer.render(scene, camera);
       };
     </script>

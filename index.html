@@ -41,7 +41,7 @@
       raycaster: new THREE.Raycaster(),
       mouse: new THREE.Vector2(),
       selectedObject: null,
-
+      rotate: false,
 
       }
 
@@ -121,28 +121,66 @@
         setSelectedObject(clickObject);
         }
       };
-
+      window.onkeypress = function(e) {
+        if (e.key == 'e') {
+            CONTROLS.rotate = !CONTROLS.rotate;
+        }
+      }
       //select object group
-      function setSelectedObject(obj) {
+      /*function setSelectedObject(obj) {
+
+        // remove highlight
         if (CONTROLS.selectedObject && CONTROLS.selectedObject.material?.emissive) {
           CONTROLS.selectedObject.material.emissive.set(0x000000);
         }
 
         CONTROLS.selectedObject = obj;
 
+        //add highlight
         if (obj.material?.emissive) {
           obj.material.emissive.set(0x4444ff);
         }
-      };
+      };*/
+      function setSelectedObject(obj) {
+
+        if (CONTROLS.selectedObject === obj) {
+          // restore original emissive
+          if (obj.material?.originalEmissive) {
+            obj.material.emissive.copy(obj.material.originalEmissive);
+          }
+           // nothing selected now
+          CONTROLS.selectedObject = null;
+          return;
+        }
+
+
+        // remove highlight from previous selection
+        if (CONTROLS.selectedObject?.material?.originalEmissive) {
+          CONTROLS.selectedObject.material.emissive.copy(
+          CONTROLS.selectedObject.material.originalEmissive);
+        }
+
+        // clone material to avoid affecting others
+        if (!obj.material.isCloned) {
+          obj.material = obj.material.clone();
+          obj.material.isCloned = true;
+          obj.material.originalEmissive = obj.material.emissive.clone();
+        }
+
+        CONTROLS.selectedObject = obj;
+
+        // highlight
+        obj.material.emissive.set(0x4444ff);
+      }
 
       function animate() {
         requestAnimationFrame( animate );
-
+        if(!CONTROLS.rotate){
         // rotate object
         if (CONTROLS.selectedObject) {
           CONTROLS.selectedObject.rotation.y += 0.02;
         }
-
+      }
         //rain
         rain.geometry.verticesNeedUpdate = true;
         rain.position.y +=0.222;

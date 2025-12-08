@@ -9,8 +9,9 @@ export async function createCity(scene) {
 
     scene.add(building);
     // highlight red box outline
-    var helper = new THREE.BoxHelper(building, 0xff0000);
-    scene.add(helper);
+    //var helper = new THREE.BoxHelper(building, 0xff0000);
+    //helper.material.depthWrite = false;
+    //scene.add(helper);
     console.log("Building loaded:", building);
 
     return building;

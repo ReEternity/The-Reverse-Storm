@@ -95,11 +95,6 @@
         let sizes = [];
         rainGeo = new THREE.BufferGeometry();
         for(let i=0;i<rainCount;i++) {
-            // rainDrop = new THREE.Vector3(
-            //   Math.random() * 400 -200,
-            //   Math.random() * 500 - 250,
-            //   Math.random() * 400 - 200
-            // );
             positions.push(Math.random() * 400 -200);
             positions.push(Math.random() * 500 - 250);
             positions.push(Math.random() * 400 - 200);
@@ -111,8 +106,8 @@
         );
 
         rainMaterial = new THREE.PointsMaterial({
-            color: 0xaaaaaa,
-            size: 0.2,
+            color: 0x000000,//0xaaaaaa for white, 0x000000 for black
+            size: 0.5,
             transparent: true
         });
         rain = new THREE.Points(rainGeo,rainMaterial);
@@ -173,12 +168,9 @@
         }
 
         //rain
-        
-        const time = Date.now()*0.005;
         rainGeo.verticesNeedUpdate = true;
-
-        rain.position.y -=0.222;
-        if (rain.position.z < -200) rain.position.z = 0;
+        rain.position.y +=0.222;
+        if (rain.position.z > 200) rain.position.z = 0;
 
         controls.update();
         

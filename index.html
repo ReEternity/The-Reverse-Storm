@@ -2,7 +2,7 @@
   <head>
     <style>
       html, body { 
-        background-color:#000;
+        background-color:#ffffff;
         margin: 0;
         padding: 0;
         height: 100%;
@@ -36,7 +36,7 @@
       import { createRain } from './src/storm.js';
 
       var renderer, controls, scene, camera, effect;
-      var rain, rainGeo, rainMaterial, rainCount = 15000;
+      var rain
       window['SCENE'] = {
       raycaster: new THREE.Raycaster(),
       mouse: new THREE.Vector2(),
@@ -79,7 +79,7 @@
 
         //set up environment
         const building = await createCity(scene);
-        //const rain = await createRain(scene);
+        rain = await createRain(scene);
 
         //check objects
         let allObjects = [];
@@ -91,29 +91,29 @@
         });
 
         //rain creation
-        let positions = [];
-        let sizes = [];
-        rainGeo = new THREE.BufferGeometry();
-        for(let i=0;i<rainCount;i++) {
-            positions.push(Math.random() * 400 -200);
-            positions.push(Math.random() * 500 - 250);
-            positions.push(Math.random() * 400 - 200);
-            sizes.push(30);
-        }
-        rainGeo.setAttribute(
-            "position",
-            new THREE.BufferAttribute(new Float32Array(positions),3)
-        );
+        // let positions = [];
+        // let sizes = [];
+        // rainGeo = new THREE.BufferGeometry();
+        // for(let i=0;i<rainCount;i++) {
+        //     positions.push(Math.random() * 400 -200);
+        //     positions.push(Math.random() * 500 - 250);
+        //     positions.push(Math.random() * 400 - 200);
+        //     sizes.push(30);
+        // }
+        // rainGeo.setAttribute(
+        //     "position",
+        //     new THREE.BufferAttribute(new Float32Array(positions),3)
+        // );
 
-        rainMaterial = new THREE.PointsMaterial({
-            color: 0x000000,//0xaaaaaa for white, 0x000000 for black
-            size: 0.5,
-            transparent: true
-        });
-        rain = new THREE.Points(rainGeo,rainMaterial);
-        console.log("created the rain");
-        console.log(rain);
-        scene.add(rain);
+        // rainMaterial = new THREE.PointsMaterial({
+        //     color: 0x000000,//0xaaaaaa for white, 0x000000 for black
+        //     size: 0.5,
+        //     transparent: true
+        // });
+        // rain = new THREE.Points(rainGeo,rainMaterial);
+        // console.log("created the rain");
+        // console.log(rain);
+        // scene.add(rain);
         //rain creation end===========================================
 
         console.log("All objects:", allObjects);
@@ -168,9 +168,9 @@
         }
 
         //rain
-        rainGeo.verticesNeedUpdate = true;
+        rain.geometry.verticesNeedUpdate = true;
         rain.position.y +=0.222;
-        if (rain.position.z > 200) rain.position.z = 0;
+        if (rain.position.y > 200) rain.position.y = 0;
 
         controls.update();
         

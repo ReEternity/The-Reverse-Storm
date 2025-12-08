@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export async function createRain(scene) {
-   var rain, rainGeo, rainMaterial, rainCount = 150;
+   var rain, rainGeo, rainMaterial, rainCount = 15000;
 
    let positions = [];
    let sizes = [];
@@ -23,8 +23,8 @@ export async function createRain(scene) {
       transparent: true
    });
    rain = new THREE.Points(rainGeo,rainMaterial);
-   console.log("created the rain");
-   console.log(rain);
+   // console.log("created the rain");
+   // console.log(rain);
    scene.add(rain);
    return rain
 }

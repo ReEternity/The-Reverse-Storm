@@ -1,7 +1,8 @@
 Priority:
-need to get the model of the surrounding UMB environment (classroom, library, general surrounding of the campus)
-need to figure out how to modify/create individual item in the above environment
-need to figre out how to create reverse rain effect
+-> idk man: need to get the model of the surrounding UMB environment (classroom, library, general surrounding of the campus)
+in progress: need to figure out how to modify/create individual item in the above environment
+finished: need to figre out how to create reverse rain effect
+   -> create puddle next
 
 low tier priority:
 simulate the flow of time somehow

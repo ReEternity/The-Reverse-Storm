@@ -33,8 +33,10 @@
       import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
 
       import { createCity } from './src/city.js';
+      import { createRain } from './src/storm.js';
 
       var renderer, controls, scene, camera, effect;
+      var rain, rainGeo, rainMaterial, rainCount = 15000;
       window['SCENE'] = {
       raycaster: new THREE.Raycaster(),
       mouse: new THREE.Vector2(),
@@ -63,11 +65,11 @@
         document.body.appendChild( renderer.domElement );
         
         //.. setup lights
-        var ambientLight = new THREE.AmbientLight();
+        var ambientLight = new THREE.AmbientLight(0x555555);
         scene.add( ambientLight );
  
-        var light = new THREE.DirectionalLight( 0xffffff, 5.0 );
-        light.position.set( 10, 100, 10 );
+        var light = new THREE.DirectionalLight( 0xffeedd);
+        light.position.set( 0, 0, 1 );
         scene.add( light );
  
        
@@ -77,6 +79,7 @@
 
         //set up environment
         const building = await createCity(scene);
+        //const rain = await createRain(scene);
 
         //check objects
         let allObjects = [];
@@ -86,6 +89,37 @@
           allObjects.push(obj);
           if (obj.isMesh) meshes.push(obj);
         });
+
+        //rain creation
+        let positions = [];
+        let sizes = [];
+        rainGeo = new THREE.BufferGeometry();
+        for(let i=0;i<rainCount;i++) {
+            // rainDrop = new THREE.Vector3(
+            //   Math.random() * 400 -200,
+            //   Math.random() * 500 - 250,
+            //   Math.random() * 400 - 200
+            // );
+            positions.push(Math.random() * 400 -200);
+            positions.push(Math.random() * 500 - 250);
+            positions.push(Math.random() * 400 - 200);
+            sizes.push(30);
+        }
+        rainGeo.setAttribute(
+            "position",
+            new THREE.BufferAttribute(new Float32Array(positions),3)
+        );
+
+        rainMaterial = new THREE.PointsMaterial({
+            color: 0xaaaaaa,
+            size: 0.2,
+            transparent: true
+        });
+        rain = new THREE.Points(rainGeo,rainMaterial);
+        console.log("created the rain");
+        console.log(rain);
+        scene.add(rain);
+        //rain creation end===========================================
 
         console.log("All objects:", allObjects);
         console.log("Mesh objects:", meshes);
@@ -132,12 +166,20 @@
       };
 
       function animate() {
- 
         requestAnimationFrame( animate );
 
         if (SCENE.selectedObject) {
           SCENE.selectedObject.rotation.y += 0.02;
         }
+
+        //rain
+        
+        const time = Date.now()*0.005;
+        rainGeo.verticesNeedUpdate = true;
+
+        rain.position.y -=0.222;
+        if (rain.position.z < -200) rain.position.z = 0;
+
         controls.update();
         
         renderer.render(scene, camera);

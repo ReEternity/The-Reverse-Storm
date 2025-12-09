@@ -35,6 +35,8 @@
       import { createCity } from './src/city.js';
       import { createRain } from './src/storm.js';
       import { createFog } from './src/fog.js';
+      import { addFloating, updateFloating, floatAllChairs } from './src/floating.js';
+
       var renderer, controls, scene, camera, effect;
       var rain, rainGeo, rainMaterial, rainCount = 15000, fog, fog_max_D = 400;
       window['CONTROLS'] = {
@@ -42,6 +44,7 @@
       mouse: new THREE.Vector2(),
       selectedObject: null,
       rotate: true,
+      select: true,
       };
       let cloudParticles = [];
 
@@ -89,7 +92,9 @@
         //set up environment
         const building = await createCity(scene);
         rain = await createRain(scene);
-
+        //floating objects
+        floatAllChairs(building);
+        
         //check objects
         let allObjects = [];
         let meshes = [];
@@ -150,6 +155,9 @@
         if (e.key == 'e') {
             CONTROLS.rotate = !CONTROLS.rotate;
         }
+        if (e.key == 'w') {
+            CONTROLS.select = !CONTROLS.select;
+        }
       }
       //select object group
       /*function setSelectedObject(obj) {
@@ -167,6 +175,7 @@
         }
       };*/
       function setSelectedObject(obj) {
+        if(!CONTROLS.select){
 
         if (CONTROLS.selectedObject === obj) {
           // restore original emissive
@@ -196,6 +205,13 @@
 
         // highlight
         obj.material.emissive.set(0x4444ff);
+
+        addFloating(obj, {
+        amplitude: 1.0,
+        speed: 0.7,
+        rotation: 0.3
+    });
+  }
       }
 
       function animate() {
@@ -216,6 +232,11 @@
         rain.geometry.verticesNeedUpdate = true;
         rain.position.y +=0.222;
         if (rain.position.y > 200) rain.position.y = 0;
+
+        //float objects
+        updateFloating();
+
+
 
         controls.update();
         renderer.render(scene, camera);

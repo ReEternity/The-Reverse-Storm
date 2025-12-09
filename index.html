@@ -35,6 +35,8 @@
       import { createCity } from './src/city.js';
       import { createRain } from './src/rain.js';
       import { createRain2 } from './src/rain2.js';
+      import { addFloating, updateFloating, floatAllChairs } from './src/floating.js';
+
       var renderer, controls, scene, camera, effect, phaseTime = Date.now(), phase = 0;
       var rain, rain2, rain3, fog_max_D = 400, longRain, longRain2, oneTimeToggle = true;
       
@@ -43,6 +45,7 @@
         mouse: new THREE.Vector2(),
         selectedObject: null,
         rotate: true,
+        select: true,
       };
 
       window['SCENE'] = {
@@ -94,7 +97,9 @@
         rain3 = await createRain(scene, 0x000000, 1.5, 10000, false);
         longRain2 = await createRain2(scene, 0x000000, 0.3, 1000, false);
 
-
+        //floating objects
+        floatAllChairs(building);
+        
         //check objects
         let allObjects = [];
         let meshes = [];
@@ -155,6 +160,9 @@
         if (e.key == 'e') {
             CONTROLS.rotate = !CONTROLS.rotate;
         }
+        if (e.key == 'w') {
+            CONTROLS.select = !CONTROLS.select;
+        }
       }
       //select object group
       /*function setSelectedObject(obj) {
@@ -172,6 +180,7 @@
         }
       };*/
       function setSelectedObject(obj) {
+        if(!CONTROLS.select){
 
         if (CONTROLS.selectedObject === obj) {
           // restore original emissive
@@ -201,7 +210,14 @@
 
         // highlight
         obj.material.emissive.set(0x4444ff);
+
+        addFloating(obj, {
+        amplitude: 1.0,
+        speed: 0.7,
+        rotation: 0.3
+        });
       }
+    }
 
       function animate() {
         requestAnimationFrame( animate );
@@ -211,6 +227,10 @@
             CONTROLS.selectedObject.rotation.y += 0.02;
           }
         }
+        
+        //float objects
+        updateFloating();
+
         //fog
         if (window.SCENE.fog){
           scene.fog = new THREE.Fog(0xDFE9F3,0,window.SCENE.fog_max_distance);

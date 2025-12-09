@@ -8,3 +8,13 @@ low tier priority:
 simulate the flow of time somehow
 simulate different storm effect
 add sounds to the storm
+
+-add in multiple rain effects***
+-add a background - a sky? make it warped as the storms goes on  / or just add a few clouds ***
+-make the lightsource only the the lamps and motorcycle light? ***
+-create the storm scene where rain and objects floating are gradually increasing, the speed is increasing exponentially
+-add a camera perspective for the storm scene - a far away one and one that looks like you are in the midst of it
+-when the storm scenerio starts, have a preset ambient light
+-when storm scenario starts have the fog slowly transition in
+
+-when objects are floating in the air you can interact with either hand movement or mouse

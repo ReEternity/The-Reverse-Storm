@@ -134,7 +134,7 @@ export function floatAllChairs(root) {
     });
     root.traverse(obj => {
         // Detect cups
-        if (obj.isMesh && obj.name.includes("BASE_Atlas04_0_8") || obj.name.includes("BASE_Atlas04_0") || obj.name.includes("BASE_Atlas04_0_9")) {
+        if (obj.isMesh && obj.name.includes("BASE_Atlas04_0_8") || obj.name === "pasted__BASE_Atlas04_0" || obj.name.includes("BASE_Atlas04_0_9")) {
             setTimeout(() => {// add delay
                 addFloating(obj, {
                     amplitude: 5,
@@ -148,6 +148,45 @@ export function floatAllChairs(root) {
     root.traverse(obj => {
         // Detect cups
         if (obj.isMesh && obj.name.includes("caja_de_pizza")) {
+            setTimeout(() => {// add delay
+                addFloating(obj, {
+                    amplitude: 5,
+                    speed: 0.7 + Math.random() * 1.5,
+                    rotation: 0.7,
+                    targetY: obj.position.y + 60
+                });
+            }, randomInRange(20000, 25000));
+        }
+    });
+    root.traverse(obj => {
+        // Detect cups
+        if (obj.isMesh && obj.name.includes("SILLA")) {
+            setTimeout(() => {// add delay
+                addFloating(obj, {
+                    amplitude: 5,
+                    speed: 0.7 + Math.random() * 1.5,
+                    rotation: 0.7,
+                    targetY: obj.position.y + 60
+                });
+            }, randomInRange(20000, 25000));
+        }
+    });
+    root.traverse(obj => {
+        // Detect cups
+        if (obj.isMesh && obj.name.includes("madera")) {
+            setTimeout(() => {// add delay
+                addFloating(obj, {
+                    amplitude: 5,
+                    speed: 0.7 + Math.random() * 1.5,
+                    rotation: 0.7,
+                    targetY: obj.position.y + 60
+                });
+            }, randomInRange(20000, 25000));
+        }
+    });
+    root.traverse(obj => {
+        // Detect cups
+        if (obj.isMesh && obj.name.includes("SM_tacho")) {
             setTimeout(() => {// add delay
                 addFloating(obj, {
                     amplitude: 5,

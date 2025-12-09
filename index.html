@@ -39,7 +39,7 @@
 
       var renderer, controls, scene, camera, light, effect, phaseTime = Date.now(), phase = 0;
       var rain, rain2, rain3, fog_max_D = 400, longRain, longRain2, oneTimeToggle = false;
-      let thunderSound, rainBaseSound, heavyRainSound, flash;
+      let thunderSound, rainBaseSound, heavyRainSound, waterDripSound, flash;
       const sounds = [];
       window['CONTROLS'] = {
         raycaster: new THREE.Raycaster(),
@@ -50,8 +50,8 @@
       };
 
       window['SCENE'] = {
-        'fog_max_distance': 400,
-        'fog': false,
+        'fog_max_distance': 800,
+        'fog': true,
         'enable_fog': function() {
           window['SCENE']['fog'] = !window['SCENE']['fog'];
         },
@@ -70,7 +70,7 @@
         var zNear = 0.1;
         var zFar = 10000;
         camera = new THREE.PerspectiveCamera( fov, ratio, zNear, zFar );
-        camera.position.set(0, 0, 100);
+        camera.position.set(0, 30, 150);
  
         // create renderer and add canvas
         renderer = new THREE.WebGLRenderer({antialias:true});
@@ -78,7 +78,7 @@
         document.body.appendChild( renderer.domElement );
         
         //.. setup lights
-        var ambientLight = new THREE.AmbientLight();
+        var ambientLight = new THREE.AmbientLight(0x4a68c1);
         scene.add( ambientLight );
  
         light = new THREE.DirectionalLight(0xffeedd);
@@ -93,7 +93,7 @@
         const manager = new THREE.LoadingManager();
         //manager.onLoad = () => console.log("loaded", sounds);
         const audioLoader = new THREE.AudioLoader(manager);
-        const mp3s = ["heavyRain", "rainSBase", "thunderS"];
+        const mp3s = ["heavyRain", "rainSBase", "thunderS", "waterDrip"];
         const listener = new THREE.AudioListener();
         camera.add(listener);
         // Resume AudioContext on first user interaction
@@ -119,6 +119,9 @@
           if (name === "thunderS") {
             thunderSound = sound;
           }
+          if (name === "waterDrip") {
+            waterDripSound = sound;
+          }
           sounds.push(sound);
           audioLoader.load(`./sfx/${name}.mp3`, function (buffer) {
             sound.setBuffer(buffer);
@@ -132,7 +135,7 @@
 
         //set up environment
         const building = await createCity(scene);
-        rain = await createRain(scene, 0x000000, 0.5, 150, true);
+        rain = await createRain(scene, 0x000000, 0.5, 500, true);
         longRain = await createRain2(scene, 0x000000, 0.3, 500, false);
         rain2 = await createRain(scene, 0x000000, 1, 1500, false);
         rain3 = await createRain(scene, 0x000000, 1.5, 10000, false);
@@ -274,8 +277,12 @@
 
         //fog
         if (window.SCENE.fog){
-          scene.fog = new THREE.Fog(0xDFE9F3,0,window.SCENE.fog_max_distance);
-        }else{
+          // Linearly decrease fog distance from 800 to 200 during phase 0-10
+          if (phase >= 0 && phase <= 10) {
+            window.SCENE.fog_max_distance = 800 - (phase / 10) * (800 - 0);
+          }
+          scene.fog = new THREE.Fog(0xDFE9F3, 0, window.SCENE.fog_max_distance);
+        } else {
           scene.fog = false;
         }
         //rain and starting the storm
@@ -289,7 +296,11 @@
         });
         rain.position.y +=0.2;
         if (rain.position.y > 230) rain.position.y = -100;
-        
+        if (phase==1 && !oneTimeToggle){
+          waterDripSound.setVolume(0.3);
+          waterDripSound.play();
+          oneTimeToggle = true;
+        }
         if (phase >=2){
           if (oneTimeToggle && phase==2){
             rain2.position.y=-300;

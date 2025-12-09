@@ -18,7 +18,7 @@ export function addFloating(obj, config = {}) {
     };
     const targetY = config.targetY ?? (obj.position.y + 20)  // target height to rise to
 
-    const riseSpeed = config.riseSpeed ?? randomInRange(0.00005, 0.0008);
+    const riseSpeed = config.riseSpeed ?? randomInRange(0.0001, 0.001);
 
     floatingObjects.push({
         obj,
@@ -57,10 +57,14 @@ export function updateFloating() {
         
 
         // APPLY POSITION
-        if (Math.abs(dot) < 0.5) {
+        if (Math.abs(dot) < 0.5 && obj.name.includes("BANQUIT")) {
             item.basePosition.z += (targetY - item.basePosition.z) * item.riseSpeed;
 
             obj.position.z = item.basePosition.z + floatY;
+        } else if (dot < 0.5) {
+            // cup
+            item.basePosition.y += (targetY - item.basePosition.y) * item.riseSpeed;
+            obj.position.y = item.basePosition.y + floatY;
         } else {
             item.basePosition.y += (targetY - item.basePosition.y) * item.riseSpeed;
 
@@ -71,6 +75,7 @@ export function updateFloating() {
         obj.rotation.x = Math.sin(time * 0.5) * settings.rotation * 0.3;
         obj.rotation.z = Math.cos(time * 0.8) * settings.rotation * 0.3;
     }
+    
 }
 
 
@@ -85,7 +90,72 @@ export function floatAllChairs(root) {
                     rotation: 0.7,
                     targetY: obj.position.y + 65
                 });
-            }, Math.random() * 10000);
+            }, randomInRange(10000, 25000));
+        }
+    });
+    root.traverse(obj => {
+        // Detect cups
+        if (obj.isMesh && obj.name.includes("pCylinder")) {
+            setTimeout(() => {// add delay
+                addFloating(obj, {
+                    amplitude: 5,
+                    speed: 0.7 + Math.random() * 1.5,
+                    rotation: 0.7,
+                    targetY: obj.position.y + 40
+                });
+            }, randomInRange(10000, 20000));
+        }
+    });
+    root.traverse(obj => {
+        // Detect cups
+        if (obj.isMesh && obj.name.includes("botella")) {
+            setTimeout(() => {// add delay
+                addFloating(obj, {
+                    amplitude: 5,
+                    speed: 0.7 + Math.random() * 1.5,
+                    rotation: 0.7,
+                    targetY: obj.position.y + 60
+                });
+            }, randomInRange(10000, 15000));
+        }
+    });
+    root.traverse(obj => {
+        // Detect cups
+        if (obj.isMesh && obj.name.includes("RESPALDO")) {
+            setTimeout(() => {// add delay
+                addFloating(obj, {
+                    amplitude: 5,
+                    speed: 0.7 + Math.random() * 1.5,
+                    rotation: 0.7,
+                    targetY: obj.position.y + 60
+                });
+            }, randomInRange(20000, 25000));
+        }
+    });
+    root.traverse(obj => {
+        // Detect cups
+        if (obj.isMesh && obj.name.includes("BASE_Atlas04_0_8") || obj.name.includes("BASE_Atlas04_0") || obj.name.includes("BASE_Atlas04_0_9")) {
+            setTimeout(() => {// add delay
+                addFloating(obj, {
+                    amplitude: 5,
+                    speed: 0.7 + Math.random() * 1.5,
+                    rotation: 0.7,
+                    targetY: obj.position.y + 60
+                });
+            }, randomInRange(20000, 25000));
+        }
+    });
+    root.traverse(obj => {
+        // Detect cups
+        if (obj.isMesh && obj.name.includes("caja_de_pizza")) {
+            setTimeout(() => {// add delay
+                addFloating(obj, {
+                    amplitude: 5,
+                    speed: 0.7 + Math.random() * 1.5,
+                    rotation: 0.7,
+                    targetY: obj.position.y + 60
+                });
+            }, randomInRange(20000, 25000));
         }
     });
 }

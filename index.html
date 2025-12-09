@@ -33,17 +33,17 @@
       import {Pane} from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
 
       import { createCity } from './src/city.js';
-      import { createRain } from './src/storm.js';
-      import { createFog } from './src/fog.js';
-      var renderer, controls, scene, camera, effect;
-      var rain, rainGeo, rainMaterial, rainCount = 15000, fog, fog_max_D = 400;
+      import { createRain } from './src/rain.js';
+      import { createRain2 } from './src/rain2.js';
+      var renderer, controls, scene, camera, effect, phaseTime = Date.now(), phase = 0;
+      var rain, rain2, rain3, fog_max_D = 400, longRain, longRain2, oneTimeToggle = true;
+      
       window['CONTROLS'] = {
-      raycaster: new THREE.Raycaster(),
-      mouse: new THREE.Vector2(),
-      selectedObject: null,
-      rotate: true,
+        raycaster: new THREE.Raycaster(),
+        mouse: new THREE.Vector2(),
+        selectedObject: null,
+        rotate: true,
       };
-      let cloudParticles = [];
 
       window['SCENE'] = {
         'fog_max_distance': 400,
@@ -88,7 +88,12 @@
 
         //set up environment
         const building = await createCity(scene);
-        rain = await createRain(scene);
+        rain = await createRain(scene, 0x000000, 0.5, 150, true);
+        longRain = await createRain2(scene, 0x000000, 0.3, 500, false);
+        rain2 = await createRain(scene, 0x000000, 1, 1500, false);
+        rain3 = await createRain(scene, 0x000000, 1.5, 10000, false);
+        longRain2 = await createRain2(scene, 0x000000, 0.3, 1000, false);
+
 
         //check objects
         let allObjects = [];
@@ -212,10 +217,66 @@
         }else{
           scene.fog = false;
         }
-        //rain
-        rain.geometry.verticesNeedUpdate = true;
-        rain.position.y +=0.222;
-        if (rain.position.y > 200) rain.position.y = 0;
+        //rain and starting the storm
+        rain.children.forEach(line => {
+          line.material.resolution.set(window.innerWidth, window.innerHeight);
+        });
+        rain.position.y +=0.2;
+        if (rain.position.y > 230) rain.position.y = -100;
+        
+        if (phase >=2){
+          if (oneTimeToggle && phase==2){
+            rain2.position.y=-300;
+            rain2.visible = true;
+            oneTimeToggle = false;
+          }
+
+          rain2.children.forEach(line => {
+            line.material.resolution.set(window.innerWidth, window.innerHeight);
+          });
+          rain2.position.y += 0.3;
+          if (rain2.position.y > 230) rain2.position.y = -100;
+        }
+        if (phase>=3){ //phase 3
+          if (!oneTimeToggle && phase==3){
+            longRain.position.y=-300;
+            rain3.position.y=-300;
+            rain3.visible = true;
+            longRain.visible = true;
+            oneTimeToggle = true;
+          }
+
+          longRain.children.forEach(line => {
+            line.material.resolution.set(window.innerWidth, window.innerHeight);
+          });
+          longRain.position.y += 0.5;
+          if (longRain.position.y > 230) longRain.position.y = -100;
+          rain3.position.y += 0.45;
+          if (rain3.position.y > 230) rain3.position.y = -100;
+        }
+        if (phase>=4){ //phase 4
+          if (oneTimeToggle && phase==4){
+            longRain2.position.y=-300;
+            longRain2.visible = true;
+            oneTimeToggle = false;
+          }
+
+          longRain2.children.forEach(line => {
+            line.material.resolution.set(window.innerWidth, window.innerHeight);
+          });
+          longRain2.position.y += 0.7;
+          if (longRain2.position.y > 230) longRain2.position.y = -100;
+        }
+
+
+        //phase of the storm
+        const currentTime = Date.now();
+        //console.log("Current Time:", currentTime, "Phase Time:", phaseTime);
+        if (currentTime - phaseTime >= 5000) { // 1000 ms = 1 seconds
+          phase+=1;
+          console.log("Phase:", phase);
+          phaseTime = currentTime;
+        }
 
         controls.update();
         renderer.render(scene, camera);

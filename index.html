@@ -37,9 +37,10 @@
       import { createRain2 } from './src/rain2.js';
       import { addFloating, updateFloating, floatAllChairs } from './src/floating.js';
 
-      var renderer, controls, scene, camera, effect, phaseTime = Date.now(), phase = 0;
-      var rain, rain2, rain3, fog_max_D = 400, longRain, longRain2, oneTimeToggle = true;
-      
+      var renderer, controls, scene, camera, light, effect, phaseTime = Date.now(), phase = 0;
+      var rain, rain2, rain3, fog_max_D = 400, longRain, longRain2, oneTimeToggle = false;
+      let thunderSound, rainBaseSound, heavyRainSound, flash;
+      const sounds = [];
       window['CONTROLS'] = {
         raycaster: new THREE.Raycaster(),
         mouse: new THREE.Vector2(),
@@ -80,9 +81,49 @@
         var ambientLight = new THREE.AmbientLight();
         scene.add( ambientLight );
  
-        var light = new THREE.DirectionalLight(0xffeedd);
+        light = new THREE.DirectionalLight(0xffeedd);
         light.position.set( 0, 100, 0 );
         scene.add( light );
+
+        // flash = new THREE.PointLight(0x062d89, 30, 100 ,1.7);
+        // flash.position.set(0,100,0);
+        // scene.add(flash);
+
+        //set up sounds
+        const manager = new THREE.LoadingManager();
+        //manager.onLoad = () => console.log("loaded", sounds);
+        const audioLoader = new THREE.AudioLoader(manager);
+        const mp3s = ["heavyRain", "rainSBase", "thunderS"];
+        const listener = new THREE.AudioListener();
+        camera.add(listener);
+        // Resume AudioContext on first user interaction
+        function resumeAudioContext() {
+          if (listener.context.state === 'suspended') {
+            listener.context.resume();
+            console.log('AudioContext resumed');
+          }
+        }
+        
+        window.addEventListener('click', resumeAudioContext);
+        window.addEventListener('keydown', resumeAudioContext);
+        window.addEventListener('touchstart', resumeAudioContext);
+        mp3s.forEach((name) => {
+          const sound = new THREE.Audio(listener);
+          sound.name = name;
+          if (name === "heavyRain") {
+            heavyRainSound = sound;
+          }
+          if (name === "rainSBase") {
+            rainBaseSound = sound;
+          }
+          if (name === "thunderS") {
+            thunderSound = sound;
+          }
+          sounds.push(sound);
+          audioLoader.load(`./sfx/${name}.mp3`, function (buffer) {
+            sound.setBuffer(buffer);
+          });
+        });
  
        
         // setup interaction
@@ -238,6 +279,11 @@
           scene.fog = false;
         }
         //rain and starting the storm
+        if (phase==0 && !oneTimeToggle){
+          rainBaseSound.setVolume(0.1);
+          rainBaseSound.play();
+          oneTimeToggle = true;
+        }
         rain.children.forEach(line => {
           line.material.resolution.set(window.innerWidth, window.innerHeight);
         });
@@ -249,6 +295,8 @@
             rain2.position.y=-300;
             rain2.visible = true;
             oneTimeToggle = false;
+            rainBaseSound.setVolume(0.3);
+            rainBaseSound.play();
           }
 
           rain2.children.forEach(line => {
@@ -264,6 +312,8 @@
             rain3.visible = true;
             longRain.visible = true;
             oneTimeToggle = true;
+            heavyRainSound.setVolume(0.6);
+            heavyRainSound.play();
           }
 
           longRain.children.forEach(line => {
@@ -279,6 +329,8 @@
             longRain2.position.y=-300;
             longRain2.visible = true;
             oneTimeToggle = false;
+            thunderSound.setVolume(0.8);
+            thunderSound.play();
           }
 
           longRain2.children.forEach(line => {
@@ -287,7 +339,24 @@
           longRain2.position.y += 0.7;
           if (longRain2.position.y > 230) longRain2.position.y = -100;
         }
-
+        //lightning simulation using directional light
+        if((Math.random() > 0.995 || light.intensity > 2) && (phase>=4 && phase <=10)) {
+          if(light.intensity <= 2) {
+            // Flash the light
+            light.intensity = 8 + Math.random() * 4; // Bright flash
+            light.position.set(
+              Math.random() * 200 - 100,
+              100,
+              Math.random() * 200 - 100
+            );
+            console.log("Lightning flash at:", light.position, "Intensity:", light.intensity);
+          }
+        }
+        // Gradually fade the lightning
+        if(light.intensity > 2) {
+          light.intensity *= 0.85;
+          if(light.intensity < 2) light.intensity = 1; // Return to normal
+        }
 
         //phase of the storm
         const currentTime = Date.now();
@@ -297,7 +366,7 @@
           console.log("Phase:", phase);
           phaseTime = currentTime;
         }
-
+        
         controls.update();
         renderer.render(scene, camera);
       };

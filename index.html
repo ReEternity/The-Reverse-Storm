@@ -279,11 +279,11 @@
           scene.fog = false;
         }
         //rain and starting the storm
-        if (phase==0 && !oneTimeToggle){
-          rainBaseSound.setVolume(0.1);
-          rainBaseSound.play();
-          oneTimeToggle = true;
-        }
+        // if (phase==0 && !oneTimeToggle){
+        //   rainBaseSound.setVolume(0.1);
+        //   rainBaseSound.play();
+        //   oneTimeToggle = true;
+        // }
         rain.children.forEach(line => {
           line.material.resolution.set(window.innerWidth, window.innerHeight);
         });

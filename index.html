@@ -2,7 +2,6 @@
   <head>
     <style>
       html, body { 
-        background-color:#ffffff;
         margin: 0;
         padding: 0;
         height: 100%;
@@ -35,7 +34,7 @@
       import { createCity } from './src/city.js';
       import { createRain } from './src/rain.js';
       import { createRain2 } from './src/rain2.js';
-      import { addFloating, updateFloating, floatAllChairs } from './src/floating.js';
+      import { addFloating, updateFloating, floatAllChairs, updateChunks, disintegrateObject, disintegrating } from './src/floating.js';
 
       var renderer, controls, scene, camera, light, effect, phaseTime = Date.now(), phase = 0;
       var rain, rain2, rain3, fog_max_D = 400, longRain, longRain2, oneTimeToggle = false;
@@ -47,6 +46,7 @@
         selectedObject: null,
         rotate: true,
         select: true,
+        destroy: true,
       };
 
       window['SCENE'] = {
@@ -76,7 +76,6 @@
         renderer = new THREE.WebGLRenderer({antialias:true});
         renderer.setSize( window.innerWidth, window.innerHeight );
         document.body.appendChild( renderer.domElement );
-        
         //.. setup lights
         var ambientLight = new THREE.AmbientLight(0x4a68c1);
         scene.add( ambientLight );
@@ -198,6 +197,10 @@
         console.log("You clicked:", clickObject.name, clickObject);
 
         setSelectedObject(clickObject);
+
+        if (!CONTROLS.destroy){
+          disintegrateObject(clickObject);
+        }
         }
       };
       window.onkeypress = function(e) {
@@ -207,22 +210,10 @@
         if (e.key == 'w') {
             CONTROLS.select = !CONTROLS.select;
         }
+        if (e.key == 'q') {
+            CONTROLS.destroy = !CONTROLS.destroy;
+        }
       }
-      //select object group
-      /*function setSelectedObject(obj) {
-
-        // remove highlight
-        if (CONTROLS.selectedObject && CONTROLS.selectedObject.material?.emissive) {
-          CONTROLS.selectedObject.material.emissive.set(0x000000);
-        }
-
-        CONTROLS.selectedObject = obj;
-
-        //add highlight
-        if (obj.material?.emissive) {
-          obj.material.emissive.set(0x4444ff);
-        }
-      };*/
       function setSelectedObject(obj) {
         if(!CONTROLS.select){
 
@@ -378,6 +369,15 @@
           phaseTime = currentTime;
         }
         
+        for (let i = disintegrating.length - 1; i >= 0; i--) {
+    const chunks = disintegrating[i];
+    updateChunks(chunks);
+
+    // ⛔ FIX: remove empty batches
+    if (chunks.length === 0) {
+        disintegrating.splice(i, 1);
+    }
+}
         controls.update();
         renderer.render(scene, camera);
       };

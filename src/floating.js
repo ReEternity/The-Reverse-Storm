@@ -3,6 +3,7 @@ import * as THREE from 'three';
 // hold floating objects
 const floatingObjects = [];
 let startTime = null;
+export const disintegrating = [];
 
 // add an object or group to the floating system
 export function addFloating(obj, config = {}) {
@@ -53,9 +54,6 @@ export function updateFloating() {
         const worldUp = new THREE.Vector3(0, 1, 0);
         const dot = upLocal.dot(worldUp);
 
-
-        
-
         // APPLY POSITION
         if (Math.abs(dot) < 0.5 && obj.name.includes("BANQUIT")) {
             item.basePosition.z += (targetY - item.basePosition.z) * item.riseSpeed;
@@ -75,10 +73,73 @@ export function updateFloating() {
         obj.rotation.x = Math.sin(time * 0.5) * settings.rotation * 0.3;
         obj.rotation.z = Math.cos(time * 0.8) * settings.rotation * 0.3;
     }
-    
 }
+   export function updateChunks(chunks) {
+    for (let i = chunks.length - 1; i >= 0; i--) {
+        const c = chunks[i];
 
+        if (!c.parent) {
+            chunks.splice(i, 1);
+            continue;
+        }
 
+        // outward explosion
+        c.position.add(c.userData.velocity);
+
+        // slowdown
+        c.userData.velocity.multiplyScalar(0.98);
+
+        // shrink
+        c.scale.multiplyScalar(0.98);
+
+        // fade out
+        c.userData.fade *= 0.96;
+        c.material.opacity = c.userData.fade;
+        c.material.transparent = true;
+
+        // remove when invisible
+        if (c.userData.fade < 0.02) {
+            c.parent.remove(c);
+            chunks.splice(i, 1);
+        }
+    }
+}
+function createChunks(mesh) {
+    const geometry = mesh.geometry;
+    geometry.computeBoundingSphere();
+
+    const chunks = [];
+
+    for (let i = 0; i < 20; i++) {
+        const chunk = mesh.clone();
+        chunk.geometry = mesh.geometry.clone();
+        chunk.material = mesh.material.clone();
+        chunk.scale.multiplyScalar(1); // full size initially
+        chunk.position.copy(mesh.position);
+        chunk.rotation.copy(mesh.rotation);
+        
+        chunk.userData.velocity = new THREE.Vector3(
+            (Math.random() - 0.5) * 0.2,
+            Math.random() * 0.3,
+            (Math.random() - 0.5) * 0.2
+        );
+        chunk.userData.fade = 1.0;
+        
+        chunks.push(chunk);
+        mesh.parent.add(chunk);
+    }
+
+    mesh.visible = false; // original disappears
+    return chunks;
+}
+export function disintegrateObject(obj) {
+    const chunks = createChunks(obj);
+    disintegrating.push(chunks);
+
+    // stop floating behavior
+    const index = floatingObjects.findIndex(f => f.obj === obj);
+    if (index > -1) floatingObjects.splice(index, 1);
+}
 export function floatAllChairs(root) {
     root.traverse(obj => {
         // Detect chairs

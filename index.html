@@ -39,7 +39,7 @@
 
       var renderer, controls, scene, camera, light, effect, phaseTime = Date.now(), phase = 0;
       var rain, rain2, rain3, fog_max_D = 400, longRain, longRain2, oneTimeToggle = false;
-      let thunderSound, rainBaseSound, heavyRainSound, waterDripSound, flash;
+      let thunderSound, rainBaseSound, heavyRainSound, waterDripSound, flash, combinedSound;
       const sounds = [];
       window['CONTROLS'] = {
         raycaster: new THREE.Raycaster(),
@@ -162,7 +162,7 @@
 
         animate();
 
-        //interactive panel
+        //interactive panel: disable during teaser
         var pane = new Pane();
         var sceneui = pane.addFolder({title: 'Scene'});
         sceneui.addBinding(light.position, 'x', { min:-100, max:100, label:'Light X' });
@@ -286,19 +286,14 @@
           scene.fog = false;
         }
         //rain and starting the storm
-        // if (phase==0 && !oneTimeToggle){
-        //   rainBaseSound.setVolume(0.1);
-        //   rainBaseSound.play();
-        //   oneTimeToggle = true;
-        // }
         rain.children.forEach(line => {
           line.material.resolution.set(window.innerWidth, window.innerHeight);
         });
         rain.position.y +=0.2;
         if (rain.position.y > 230) rain.position.y = -100;
         if (phase==1 && !oneTimeToggle){
-          waterDripSound.setVolume(0.3);
-          waterDripSound.play();
+          // waterDripSound.setVolume(0.3);
+          // waterDripSound.play();
           oneTimeToggle = true;
         }
         if (phase >=2){
@@ -306,8 +301,8 @@
             rain2.position.y=-300;
             rain2.visible = true;
             oneTimeToggle = false;
-            rainBaseSound.setVolume(0.3);
-            rainBaseSound.play();
+            // rainBaseSound.setVolume(0.3);
+            // rainBaseSound.play();
           }
 
           rain2.children.forEach(line => {
@@ -323,8 +318,8 @@
             rain3.visible = true;
             longRain.visible = true;
             oneTimeToggle = true;
-            heavyRainSound.setVolume(0.6);
-            heavyRainSound.play();
+            // heavyRainSound.setVolume(0.6);
+            // heavyRainSound.play();
           }
 
           longRain.children.forEach(line => {
@@ -340,8 +335,8 @@
             longRain2.position.y=-300;
             longRain2.visible = true;
             oneTimeToggle = false;
-            thunderSound.setVolume(0.8);
-            thunderSound.play();
+            // thunderSound.setVolume(0.8);
+            // thunderSound.play();
           }
 
           longRain2.children.forEach(line => {

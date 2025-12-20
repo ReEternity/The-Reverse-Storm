@@ -2,11 +2,16 @@
 Let the Rain Raise
 
 # Description
-The-Reverse-Storm is a visualisation of an apocalyptic storm taken inspiration from the WNDR Museum's Inside Out and The Storm from the game Reverse1999.  Like the name of the project suggests, it is a recreation of a storm but has certain elements of "reversing" such as how the rain starts from the ground and flows upward.  The main visuals also include chaotic elements with floating objects and destruction.  The storm is demonstrated in a "scene" which lasts around 1min and 30secs and can then be reset.
+The-Reverse-Storm is a visualisation of an apocalyptic storm taken inspiration from the WNDR Museum's Inside Out and The Storm from the game Reverse1999.  Like the name of the project suggests, it is a recreation of a storm but has certain elements of "reversing" such as how the rain starts from the ground and flows upward.  The main visuals also include chaotic elements with floating objects and destruction.  The storm is demonstrated in a "scene" which lasts around 1min and 30secs and can then be reset. This will be indicated by the bright sky above.
 
 # Usage
-Upon loading the page up, the scene immediately starts.  After the scene ends and the terrain resets, the scene can be
-started up again by pressing "r".  Other controls include the scene UI which can adjust light, ambient light, fog and light intensity.  For manual interaction, Pressing "q" will toggle on-click destruction.  Pressing "w" will toggle object select, combined with the "e" rotation toggle will highlight and rotate objects once clicked.
+Upon loading the page up, the scene starts after 1 left mouse click.
+After the first cycle ends and the terrain resets, the scene can be started up again by pressing "R". Note: This only works in sky-view (the default view you start with).
+When pressed ESC, all sounds and animations will be paused, so you can step away for an emergency and come back and enjoy the scene as needed. Other controls include the scene UI which can adjust light, ambient light, fog and light intensity which can also be accessed when you pressed ESC.
+In sky-view, pressing "Q" will toggle on-click destruction.  Pressing "W" will toggle object select, combined with the "E" rotation toggle will highlight and rotate objects once clicked.
+In first-person-view, WASD + mouse will control your movement and view control. SPACE can help you jump if needed. There is no wall collison installed so you can walk around at your own immersion.
+C will toggle between these 2 camera view.
+
 
 # Future Improvements
 We are still considering the best way to consider using object munipulation to demonstrate the scene so the objects can

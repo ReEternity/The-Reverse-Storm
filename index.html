@@ -41,6 +41,7 @@
       var rain, rain2, rain3, fog_max_D = 400, longRain, longRain2, puddle, building, brightEnough = false, puddle_animation = null, oneTimeToggle = false;
       var lastDisintegrationTime = 0;
       var disintegratedObjects = new Set();
+      var scenePane = null;  // Add reference to scene pane
       // reset flow control
       let resetPending = false, resetting = false, resetDone = false;
       // sunlight/reset targets and darken sequence state
@@ -88,9 +89,13 @@
         moveSpeed: 0.3,
         jumpForce: 0.40,
         gravity: 0.01,
-        mouseSensitivity: 0.0075,
+        mouseSensitivity: 0.005,
         groundLevel: 15,
       };
+      
+      // Pause menu system
+      let isPaused = false;
+      let pausePane = null;
       
       window['CONTROLS'] = {
         raycaster: new THREE.Raycaster(),
@@ -218,8 +223,8 @@
         animate();
 
         //interactive panel: disable during teaser
-        var pane = new Pane();
-        var sceneui = pane.addFolder({title: 'Scene'});
+        scenePane = new Pane();
+        var sceneui = scenePane.addFolder({title: 'Scene'});
         sceneui.addBinding(light.position, 'x', { min:-100, max:100, label:'Light X' });
         sceneui.addBinding(light.position, 'y', { min:-100, max:100, label:'Light Y' });
         sceneui.addBinding(light.position, 'z', { min:-100, max:100, label:'Light Z' });
@@ -233,6 +238,78 @@
         });
         window.SCENE.fog_max_distance = fog_max_D;
         sceneui.addBinding(window.SCENE, 'fog_max_distance', { min:0, max:800, label:'fog distance' });
+        
+        // Hide the regular scene pane by default (shown only outside pause menu)
+        scenePane.element.style.display = 'block';
+        
+        // Initialize pause pane (hidden by default) - large with all controls visible
+        pausePane = new Pane({ title: 'PAUSED - PRESS ESC TO RESUME' });
+        pausePane.element.style.display = 'none';
+        pausePane.element.style.position = 'fixed';
+        pausePane.element.style.top = '50%';
+        pausePane.element.style.left = '50%';
+        pausePane.element.style.transform = 'translate(-50%, -50%)';
+        pausePane.element.style.width = '800px';
+        pausePane.element.style.maxHeight = '90vh';
+        pausePane.element.style.overflowY = 'auto';
+        pausePane.element.style.fontSize = '14px';
+        pausePane.element.style.zIndex = '9999';
+        pausePane.element.style.boxShadow = '0 0 30px rgba(0,0,0,0.8)';
+        
+        // Add a unique class to the pause pane for scoped styling
+        pausePane.element.classList.add('tp-pause-pane');
+        
+        // Make all textareas inside ONLY the pause pane full width
+        const style = document.createElement('style');
+        style.textContent = `
+          .tp-pause-pane .tp-dfwv textarea {
+            width: 100% !important;
+            min-width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .tp-pause-pane .tp-dfwv {
+            flex: 1 !important;
+            width: 100% !important;
+          }
+          .tp-pause-pane .tp-v_c {
+            flex: 1 !important;
+            width: 100% !important;
+          }
+          .tp-pause-pane .tp-f_wp {
+            width: 100% !important;
+          }
+        `;
+        document.head.appendChild(style);
+        
+        // Add controls section
+        const controlsFolder = pausePane.addFolder({ title: 'Controls' });
+        const controlsData = {
+          firstPersonToggle: 'C',
+          fpMovement: 'wasd :',
+          miscKeys: 'E, W, Q, R',
+          forMoreInfo: 'See readme',
+          resumePause: 'ESC to Resume',
+        };
+        controlsFolder.addBinding(controlsData, 'firstPersonToggle', { disabled: true, multiline: true, rows: 2 });
+        controlsFolder.addBinding(controlsData, 'fpMovement', { disabled: true, multiline: true, rows: 3 });
+        controlsFolder.addBinding(controlsData, 'miscKeys', { disabled: true, multiline: true, rows: 4 });
+        controlsFolder.addBinding(controlsData, 'forMoreInfo', { disabled: true, multiline: true, rows: 2 });
+        controlsFolder.addBinding(controlsData, 'resumePause', { disabled: true, multiline: true, rows: 2 });
+        
+        // Add scene settings folder to pause pane
+        const sceneFolder = pausePane.addFolder({ title: 'Scene Settings' });
+        sceneFolder.addBinding(light.position, 'x', { min:-100, max:100, label:'Light X' });
+        sceneFolder.addBinding(light.position, 'y', { min:-100, max:100, label:'Light Y' });
+        sceneFolder.addBinding(light.position, 'z', { min:-100, max:100, label:'Light Z' });
+        sceneFolder.addBinding(light, 'intensity', { min:0, max:5, label:'Dir Intensity' });
+        
+        const ambientParamsPause = { color: '#4a68c1' };
+        sceneFolder.addBinding(ambientParamsPause, 'color', { label:'AmbientLight Color' })
+          .on('change', ev => ambientLight.color.set(ev.value));
+        sceneFolder.addButton({title:'fog!'}).on('click', () => {
+          window.SCENE.enable_fog();
+        });
+        sceneFolder.addBinding(window.SCENE, 'fog_max_distance', { min:0, max:800, label:'fog distance' });
       };
 
       // Async scene reset: remove current building & chunks, rebuild city and puddles
@@ -279,8 +356,25 @@
           console.error('Scene reset failed', e);
         }
       }
-      
-      window.addEventListener("pointerdown", onClick);
+            function togglePause() {
+        isPaused = !isPaused;
+        if (pausePane) {
+          pausePane.element.style.display = isPaused ? 'block' : 'none';
+        }
+        if (scenePane) {
+          scenePane.element.style.display = isPaused ? 'none' : 'block';
+        }
+        // Pause/resume audio
+        if (combinedSound) {
+          if (isPaused) {
+            combinedSound.pause();
+          } else {
+            combinedSound.play();
+          }
+        }
+        console.log(isPaused ? 'Game paused' : 'Game resumed');
+      }
+            window.addEventListener("pointerdown", onClick);
 
       function onClick(e) {
         // Only interact with scene if not in first-person mode
@@ -381,11 +475,13 @@
           if (!fpCamera) initFirstPersonCamera();
           fpEnabled = true;
           controls.enabled = false;
+          document.body.style.cursor = 'none';  // Hide cursor in first-person
           console.log('First-person camera enabled. Use WASD to move, Space to jump, Mouse to look around.');
         } else {
           // Switch back to orbit
           fpEnabled = false;
           controls.enabled = true;
+          document.body.style.cursor = 'auto';  // Show cursor in orbit mode
           console.log('Orbit camera enabled.');
         }
       }
@@ -402,6 +498,16 @@
       
       // Keyboard input for first-person movement
       document.addEventListener('keydown', (e) => {
+        // Toggle pause on Escape
+        if (e.key === 'Escape') {
+          togglePause();
+          e.preventDefault();
+          return;
+        }
+        
+        // Skip other keys if paused
+        if (isPaused) return;
+        
         if (fpEnabled) {
           const key = e.key.toLowerCase();
           if (key === 'w') fpControls.backward = true;
@@ -416,7 +522,7 @@
       });
       
       document.addEventListener('keyup', (e) => {
-        if (fpEnabled) {
+        if (!isPaused && fpEnabled) {
           const key = e.key.toLowerCase();
           if (key === 'w') fpControls.backward = false;
           if (key === 's') fpControls.forward = false;
@@ -431,6 +537,9 @@
           toggleFirstPerson();
           return;
         }
+        
+        // Don't process other keys while paused
+        if (isPaused) return;
         
         if (fpEnabled) return; // Disable other controls in first-person
         
@@ -494,6 +603,16 @@
 
       function animate() {
         requestAnimationFrame( animate );
+        
+        // Skip all updates if paused
+        if (isPaused) {
+          if (fpEnabled) {
+            renderer.render(scene, fpCamera);
+          } else {
+            renderer.render(scene, camera);
+          }
+          return;
+        }
         
         const delta = 1 / 60; // Assuming ~60fps
         

@@ -3,7 +3,7 @@ import { loadGLB } from './loader.js';
 
 export async function createCity(scene) {
 
-    var building = await loadGLB('../urban_enviroment.glb');
+    var building = await loadGLB('./urban_enviroment.glb');
     building.scale.set(100, 100, 100);
     building.position.set(0, 0, 0);
 

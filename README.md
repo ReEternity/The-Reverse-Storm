@@ -18,11 +18,19 @@ We are still considering the best way to consider using object munipulation to d
 move the way we want to exactly.  For example we want to improve the movement of the cups to flow more upwards and in a circular
 movemenet while still containing wobbling.  Some other improvements would be adding a background that fits and creating a more
 dynamic scene with lightsource that comes from the lamps.
+There are plans to add a secret boss fight in reference to Infinite Regressor's Monsoon anomaly.
+There are also plans to add shadering and multiple/bigger scenes.  
 
 # Common problems and solutions
-Since the 3D model was imported from an outside source, there are some difficulties with munipulating the objects.  The
+Since the 3D model was imported from an outside source, there are some difficulties with munipulating the objects. The
 current solution to this was to use to find the names or commonalities of the object groups through selection to
 munipulate each object.
+
+Q: Is there a limit to how far I can go with first-person-view?
+A: No.
+
+Q: Why does it take so long to load?
+A: There are over 600 objects and over 80% will be manipulated in a way. 
 
 # Authors and acknowledgment
 Thanks to:

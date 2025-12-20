@@ -1,14 +1,12 @@
 Priority:
--> idk man: need to get the model of the surrounding UMB environment (classroom, library, general surrounding of the campus)
 in progress: need to figure out how to modify/create individual item in the above environment
 finished: need to figre out how to create reverse rain effect
    -> create puddle next
+simulate the ending of storm switching to another place (decided to loop instead)
 
-simulate the ending of storm switching to another place
 low tier priority:
-simulate the flow of time somehow
-simulate different storm effect
-add sounds to the storm
+finished: simulate the flow of time somehow
+finished: add sounds to the storm
 
 -add in multiple rain effects***
 -add a background - a sky? make it warped as the storms goes on  / or just add a few clouds ***

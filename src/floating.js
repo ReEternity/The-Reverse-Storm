@@ -155,6 +155,32 @@ export function floatAllChairs(root) {
         }
     });
     root.traverse(obj => {
+        // Detect tables
+        if (obj.isMesh && (obj.name.includes("mesa") || obj.name.includes("TABLE") || obj.name.includes("table") || obj.name.includes("MESA"))) {
+            setTimeout(() => {// add delay
+                addFloating(obj, {
+                    amplitude: 5,
+                    speed: 0.7 + Math.random() * 1.5,
+                    rotation: 0.7,
+                    targetY: obj.position.y + 35
+                });
+            }, randomInRange(15000, 28000));
+        }
+    });
+    root.traverse(obj => {
+        // Detect bar stand/counter
+        if (obj.isMesh && (obj.name.includes("barra") || obj.name.includes("BAR") || obj.name.includes("bar") || obj.name.includes("mostrador") || obj.name.includes("MOSTRADOR") || obj.name.includes("pasted__BASE_Atlas04_0"))) {
+            setTimeout(() => {// add delay
+                addFloating(obj, {
+                    amplitude: 5,
+                    speed: 0.7 + Math.random() * 1.5,
+                    rotation: 0.2,
+                    targetY: obj.position.y + 30
+                });
+            }, randomInRange(18000, 30000));
+        }
+    });
+    root.traverse(obj => {
         // Detect cups
         if (obj.isMesh && obj.name.includes("pCylinder")) {
             setTimeout(() => {// add delay

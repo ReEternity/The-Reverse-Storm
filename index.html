@@ -34,12 +34,64 @@
       import { createCity } from './src/city.js';
       import { createRain } from './src/rain.js';
       import { createRain2 } from './src/rain2.js';
+      import { createPuddle, animatePuddles } from './src/puddle.js';
       import { addFloating, updateFloating, floatAllChairs, updateChunks, disintegrateObject, disintegrating } from './src/floating.js';
 
-      var renderer, controls, scene, camera, light, effect, phaseTime = Date.now(), phase = 0;
-      var rain, rain2, rain3, fog_max_D = 400, longRain, longRain2, oneTimeToggle = false;
+      var renderer, controls, scene, camera, light, effect, phaseTime = null, phase = 0, gameStarted = false;
+      var rain, rain2, rain3, fog_max_D = 400, longRain, longRain2, puddle, building, brightEnough = false, puddle_animation = null, oneTimeToggle = false;
+      var lastDisintegrationTime = 0;
+      var disintegratedObjects = new Set();
+      // reset flow control
+      let resetPending = false, resetting = false, resetDone = false;
+      // sunlight/reset targets and darken sequence state
+      const sunlightTargetColor = new THREE.Color(0xE0F6FF);
+      const resetTargetColor = new THREE.Color(0x1a1a1a);
+      const sunlightEpsilon = 0.03; // color closeness threshold
+      let darkenPending = false, darkenStartPhase = null, darkenStartColor = null;
+      let darkenStartIntensity = null;
+      const darkenDurationPhases = 2;
+      const darkenTargetIntensity = 1; // restore storm baseline
+      // floating control: disable after reset until phase threshold
+      let floatingEnabled = true;
+      const destroyWhitelist = new Set([
+        'pCube419_Atlas03_0',
+        'pCube420_Atlas03_0',
+        'pCube342_Atlas03_0',
+        'pCube369_Atlas01_0',
+        'pasted__SM_lampara_Atlas06_0',
+        'pCube372_Atlas01_0',
+        'pasted__SM_lampara_Atlas06_0_2',
+        'pasted__SM_lampara_Atlas06_0_1',
+        'pasted__SM_lampara_Atlas06_0_3' 
+      ]);
       let thunderSound, rainBaseSound, heavyRainSound, waterDripSound, flash, combinedSound;
       const sounds = [];
+      
+      // First-person camera system
+      let fpCamera = null;
+      let fpEnabled = false;
+      let fpControls = {
+        forward: false,
+        backward: false,
+        left: false,
+        right: false,
+        jump: false,
+      };
+      let fpState = {
+        position: new THREE.Vector3(0, 5, 0),
+        velocity: new THREE.Vector3(0, 0, 0),
+        yaw: 0,
+        pitch: 0,
+        isGrounded: true,
+      };
+      const fpConfig = {
+        moveSpeed: 0.3,
+        jumpForce: 0.40,
+        gravity: 0.01,
+        mouseSensitivity: 0.0075,
+        groundLevel: 15,
+      };
+      
       window['CONTROLS'] = {
         raycaster: new THREE.Raycaster(),
         mouse: new THREE.Vector2(),
@@ -63,6 +115,7 @@
  
         // create scene
         scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a1a); // Dark background for storm
  
         // setup the camera
         var fov = 75;
@@ -92,7 +145,7 @@
         const manager = new THREE.LoadingManager();
         //manager.onLoad = () => console.log("loaded", sounds);
         const audioLoader = new THREE.AudioLoader(manager);
-        const mp3s = ["heavyRain", "rainSBase", "thunderS", "waterDrip"];
+        const mp3s = ["heavyRain", "rainSBase", "thunderS", "waterDrip", "mixed"];
         const listener = new THREE.AudioListener();
         camera.add(listener);
         // Resume AudioContext on first user interaction
@@ -121,6 +174,9 @@
           if (name === "waterDrip") {
             waterDripSound = sound;
           }
+          if (name === "mixed") {
+            combinedSound = sound;
+          }
           sounds.push(sound);
           audioLoader.load(`./sfx/${name}.mp3`, function (buffer) {
             sound.setBuffer(buffer);
@@ -133,13 +189,13 @@
         effect = new AnaglyphEffect(renderer, window.innerWidth, window.innerHeight);
 
         //set up environment
-        const building = await createCity(scene);
+        building = await createCity(scene);
         rain = await createRain(scene, 0x000000, 0.5, 500, true);
         longRain = await createRain2(scene, 0x000000, 0.3, 500, false);
         rain2 = await createRain(scene, 0x000000, 1, 1500, false);
         rain3 = await createRain(scene, 0x000000, 1.5, 10000, false);
         longRain2 = await createRain2(scene, 0x000000, 0.3, 1000, false);
-
+        puddle = await createPuddle(scene, 0x000000, 10, 100, false);
         //floating objects
         floatAllChairs(building);
         
@@ -178,10 +234,65 @@
         window.SCENE.fog_max_distance = fog_max_D;
         sceneui.addBinding(window.SCENE, 'fog_max_distance', { min:0, max:800, label:'fog distance' });
       };
+
+      // Async scene reset: remove current building & chunks, rebuild city and puddles
+      async function resetCity() {
+        try {
+          // pause floating animations during/after reset
+          floatingEnabled = false;
+          // remove any disintegrated chunks
+          for (let i = disintegrating.length - 1; i >= 0; i--) {
+            const chunks = disintegrating[i];
+            for (const c of chunks) {
+              if (c.parent) c.parent.remove(c);
+            }
+          }
+          disintegrating.splice(0, disintegrating.length);
+          disintegratedObjects.clear();
+
+          // remove puddles
+          if (puddle && puddle.parent) {
+            puddle.parent.remove(puddle);
+            puddle = null;
+          }
+
+          // remove building
+          if (building && building.parent) {
+            building.parent.remove(building);
+            building = null;
+          }
+
+          // rebuild city
+          building = await createCity(scene);
+          // rebuild puddles
+          puddle = await createPuddle(scene, 0x000000, 10, 100, false);
+          // restore floating to new building
+          floatAllChairs(building);
+
+          // rebuild helper lists
+          let allObjects = [], meshes = [];
+          building.traverse(obj => { allObjects.push(obj); if (obj.isMesh) meshes.push(obj); });
+          building.allObjects = allObjects;
+          building.meshes = meshes;
+          console.log('Scene reset complete');
+        } catch (e) {
+          console.error('Scene reset failed', e);
+        }
+      }
       
       window.addEventListener("pointerdown", onClick);
 
       function onClick(e) {
+        // Only interact with scene if not in first-person mode
+        if (fpEnabled) return;
+        
+        // Start the phase timer on first click
+        if (!gameStarted) {
+          gameStarted = true;
+          phaseTime = Date.now();
+          console.log("Let the storm begin.");
+        }
+        
         // get mouse position
         CONTROLS.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         CONTROLS.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -203,7 +314,126 @@
         }
         }
       };
+      
+      // First-person camera functions
+      function initFirstPersonCamera() {
+        fpCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+        fpState.position.copy(new THREE.Vector3(0, 15, 50));
+        fpCamera.position.copy(fpState.position);
+        fpState.yaw = 0;
+        fpState.pitch = 0;
+      }
+      
+      function updateFirstPersonCamera() {
+        // Apply gravity
+        fpState.velocity.y -= fpConfig.gravity;
+        
+        // Ground collision
+        if (fpState.position.y <= fpConfig.groundLevel) {
+          fpState.position.y = fpConfig.groundLevel;
+          fpState.velocity.y = 0;
+          fpState.isGrounded = true;
+        } else {
+          fpState.isGrounded = false;
+        }
+        
+        // Movement input
+        const moveDir = new THREE.Vector3();
+        const forward = new THREE.Vector3();
+        const right = new THREE.Vector3();
+        
+        // Calculate forward and right vectors from yaw
+        forward.x = Math.sin(fpState.yaw);
+        forward.z = Math.cos(fpState.yaw);
+        right.x = Math.cos(fpState.yaw);
+        right.z = -Math.sin(fpState.yaw);
+        
+        if (fpControls.forward) moveDir.add(forward);
+        if (fpControls.backward) moveDir.sub(forward);
+        if (fpControls.left) moveDir.sub(right);
+        if (fpControls.right) moveDir.add(right);
+        
+        if (moveDir.length() > 0) {
+          moveDir.normalize();
+          fpState.position.addScaledVector(moveDir, fpConfig.moveSpeed);
+        }
+        
+        // Jump
+        if (fpControls.jump && fpState.isGrounded) {
+          fpState.velocity.y = fpConfig.jumpForce;
+          fpState.isGrounded = false;
+          fpControls.jump = false;
+        }
+        
+        // Apply velocity
+        fpState.position.y += fpState.velocity.y;
+        
+        // Update camera position and rotation
+        fpCamera.position.copy(fpState.position);
+        fpCamera.rotation.order = 'YXZ';
+        fpCamera.rotation.y = fpState.yaw;
+        fpCamera.rotation.x = fpState.pitch;
+      }
+      
+      function toggleFirstPerson() {
+        if (!fpEnabled) {
+          // Switch to first-person
+          if (!fpCamera) initFirstPersonCamera();
+          fpEnabled = true;
+          controls.enabled = false;
+          console.log('First-person camera enabled. Use WASD to move, Space to jump, Mouse to look around.');
+        } else {
+          // Switch back to orbit
+          fpEnabled = false;
+          controls.enabled = true;
+          console.log('Orbit camera enabled.');
+        }
+      }
+      
+      // Mouse move for first-person look
+      document.addEventListener('mousemove', (e) => {
+        if (!fpEnabled) return;
+        const deltaX = e.movementX || e.mozMovementX || 0;
+        const deltaY = e.movementY || e.mozMovementY || 0;
+        fpState.yaw -= deltaX * fpConfig.mouseSensitivity;
+        fpState.pitch -= deltaY * fpConfig.mouseSensitivity;
+        fpState.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, fpState.pitch));
+      });
+      
+      // Keyboard input for first-person movement
+      document.addEventListener('keydown', (e) => {
+        if (fpEnabled) {
+          const key = e.key.toLowerCase();
+          if (key === 'w') fpControls.backward = true;
+          if (key === 's') fpControls.forward = true;
+          if (key === 'a') fpControls.left = true;
+          if (key === 'd') fpControls.right = true;
+          if (key === ' ') {
+            fpControls.jump = true;
+            e.preventDefault();
+          }
+        }
+      });
+      
+      document.addEventListener('keyup', (e) => {
+        if (fpEnabled) {
+          const key = e.key.toLowerCase();
+          if (key === 'w') fpControls.backward = false;
+          if (key === 's') fpControls.forward = false;
+          if (key === 'a') fpControls.left = false;
+          if (key === 'd') fpControls.right = false;
+        }
+      });
+      
       window.onkeypress = function(e) {
+        // Toggle first-person on 'c'
+        if (e.key === 'c' || e.key === 'C') {
+          toggleFirstPerson();
+          return;
+        }
+        
+        if (fpEnabled) return; // Disable other controls in first-person
+        
         if (e.key == 'e') {
             CONTROLS.rotate = !CONTROLS.rotate;
         }
@@ -212,6 +442,14 @@
         }
         if (e.key == 'q') {
             CONTROLS.destroy = !CONTROLS.destroy;
+        }
+        // Darken sky when pressing 'r'
+        if (e.key === 'r' && !darkenPending && brightEnough) {
+          console.log('Darken sky sequence requested by user (r key)');
+          darkenPending = true;
+          darkenStartPhase = phase;
+          darkenStartColor = scene.background.clone();
+          darkenStartIntensity = light.intensity;
         }
       }
       function setSelectedObject(obj) {
@@ -256,6 +494,9 @@
 
       function animate() {
         requestAnimationFrame( animate );
+        
+        const delta = 1 / 60; // Assuming ~60fps
+        
         if(!CONTROLS.rotate){
         // rotate object
           if (CONTROLS.selectedObject) {
@@ -263,35 +504,63 @@
           }
         }
         
-        //float objects
-        updateFloating();
+        //puddle animation
+        if (puddle_animation) {
+          puddle_animation(delta);
+        }
+
+        // During sunlight phase, disable floating immediately
+        if (phase >= 15) {
+          floatingEnabled = false;
+        }
 
         //fog
         if (window.SCENE.fog){
           // Linearly decrease fog distance from 800 to 200 during phase 0-10
           if (phase >= 0 && phase <= 10) {
-            window.SCENE.fog_max_distance = 800 - (phase / 10) * (800 - 0);
+            window.SCENE.fog_max_distance = 800 - (phase / 15) * (800 - 150);
           }
           scene.fog = new THREE.Fog(0xDFE9F3, 0, window.SCENE.fog_max_distance);
         } else {
           scene.fog = false;
         }
-        //rain and starting the storm
+        //rain and starting the storm (phase 15 is the end for now)
         rain.children.forEach(line => {
           line.material.resolution.set(window.innerWidth, window.innerHeight);
         });
         rain.position.y +=0.2;
-        if (rain.position.y > 230) rain.position.y = -100;
+        if (rain.position.y > 230 && phase < 15) rain.position.y = -100;
+        if (phase>=15){
+          rain.visible = false;
+          rain2.visible = false;
+        }
         if (phase==1 && !oneTimeToggle){
           // waterDripSound.setVolume(0.3);
           // waterDripSound.play();
-          oneTimeToggle = true;
+          combinedSound.setVolume(1);
+          combinedSound.play();
+          //Start puddle fade/scale animation
+            puddle_animation = animatePuddles(puddle, {
+              fadeFrom: 0,
+              fadeTo: 0.6,
+              scaleFrom: 0.1,
+              scaleTo: 1.0,
+              duration: 30.0,
+              loop: false
+            });
+            oneTimeToggle = true;
         }
         if (phase >=2){
+          // enable floating once we reach threshold again, but not during reset/darken
+          if (!floatingEnabled && !resetPending && !resetting && !darkenPending && phase < 15) floatingEnabled = true;
+          //float objects (never during sunlight phase)
+          if (floatingEnabled && phase < 15) updateFloating();
           if (oneTimeToggle && phase==2){
             rain2.position.y=-300;
             rain2.visible = true;
             oneTimeToggle = false;
+            puddle.visible = true;
+
             // rainBaseSound.setVolume(0.3);
             // rainBaseSound.play();
           }
@@ -300,7 +569,7 @@
             line.material.resolution.set(window.innerWidth, window.innerHeight);
           });
           rain2.position.y += 0.3;
-          if (rain2.position.y > 230) rain2.position.y = -100;
+          if (rain2.position.y > 230 && phase<=15) rain2.position.y = -100;
         }
         if (phase>=3){ //phase 3
           if (!oneTimeToggle && phase==3){
@@ -317,9 +586,9 @@
             line.material.resolution.set(window.innerWidth, window.innerHeight);
           });
           longRain.position.y += 0.5;
-          if (longRain.position.y > 230) longRain.position.y = -100;
+          if (longRain.position.y > 230 && phase <=13) longRain.position.y = -100;
           rain3.position.y += 0.45;
-          if (rain3.position.y > 230) rain3.position.y = -100;
+          if (rain3.position.y > 230 && phase <=13) rain3.position.y = -100;
         }
         if (phase>=4){ //phase 4
           if (oneTimeToggle && phase==4){
@@ -334,7 +603,61 @@
             line.material.resolution.set(window.innerWidth, window.innerHeight);
           });
           longRain2.position.y += 0.7;
-          if (longRain2.position.y > 230) longRain2.position.y = -100;
+          if (longRain2.position.y > 230 && phase <=10) longRain2.position.y = -100;
+          if (phase<=14){
+            // Random object disintegration
+            const currentTime = Date.now();
+            if (currentTime - lastDisintegrationTime > 50) {
+              lastDisintegrationTime = currentTime;
+            
+              // Get available objects to disintegrate
+              const availableObjects = building.meshes.filter(obj => 
+                !disintegratedObjects.has(obj) && 
+                obj.visible &&
+                !obj.name.includes('piso') && 
+                !obj.name.includes('floor') && 
+                !obj.name.includes('PISO') &&
+                !obj.name.includes('FLOOR') &&
+                !obj.name.includes('wall') &&
+                !obj.name.includes('WALL') &&
+                !obj.name.includes('muro') &&
+                !obj.name.includes('MURO') &&
+                !obj.name.includes('pared') &&
+                !obj.name.includes('PARED') &&
+                !obj.name.includes('ladrillo') &&
+                !obj.name.includes('LADRILLO') &&
+                !obj.name.includes('ladrillos') &&
+                !obj.name.includes('LADRILLOS') &&
+                !obj.name.includes('tienda') &&
+                !obj.name.includes('TIENDA') &&
+                !obj.name.includes('SM_techo_low') &&
+                (!obj.name.includes('pCube') || destroyWhitelist.has(obj.name)) &&
+                obj.position.y > -10 // Exclude low-lying objects (likely floor)
+              );
+              
+              if (availableObjects.length > 0 && Math.random() > 0.3) {
+                const randomObj = availableObjects[Math.floor(Math.random() * availableObjects.length)];
+                disintegrateObject(randomObj);
+                disintegratedObjects.add(randomObj);
+                //console.log("Disintegrating:", randomObj.name);
+              }
+            }
+          }
+        }
+
+        if (phase>=14){ //phase 14 - puddle fade out
+          if (!oneTimeToggle && phase==14){
+            // Fade out puddles
+            puddle_animation = animatePuddles(puddle, {
+              fadeFrom: 0.6,
+              fadeTo: 0,
+              scaleFrom: 1.0,
+              scaleTo: 0.1,
+              duration: 15.0,
+              loop: false
+            });
+            oneTimeToggle = true;
+          }
         }
         //lightning simulation using directional light
         if((Math.random() > 0.995 || light.intensity > 2) && (phase>=4 && phase <=10)) {
@@ -348,20 +671,82 @@
             );
             console.log("Lightning flash at:", light.position, "Intensity:", light.intensity);
           }
+          // Gradually fade the lightning
+          if(light.intensity > 2) {
+            light.intensity *= 0.85;
+            if(light.intensity < 2) light.intensity = 1; // Return to normal
+          }
         }
-        // Gradually fade the lightning
-        if(light.intensity > 2) {
-          light.intensity *= 0.85;
-          if(light.intensity < 2) light.intensity = 1; // Return to normal
+
+        // Sunlight transition: brighten background and raise light intensity
+        // Skip while darkening back to storm
+        if (phase >= 15 && !darkenPending) {
+          // soften towards pale sky (blue-white)
+          scene.background.lerp(sunlightTargetColor, 0.02);
+          // gently raise directional light towards 5
+          light.intensity = THREE.MathUtils.lerp(light.intensity, 5, 0.02);
+
+          // Auto-reset when sky is bright blue and light near 5
+          if (!resetPending && !resetDone) {
+            const dr = Math.abs(scene.background.r - sunlightTargetColor.r);
+            const dg = Math.abs(scene.background.g - sunlightTargetColor.g);
+            const db = Math.abs(scene.background.b - sunlightTargetColor.b);
+            brightEnough = dr < sunlightEpsilon && dg < sunlightEpsilon && db < sunlightEpsilon && Math.abs(light.intensity - 5) < 0.05;
+            if (brightEnough) {
+              console.log('Sky bright; auto resetting city');
+              resetPending = true;
+            }
+          }
+        }
+
+        // r-triggered darken: lerp current sky back to dark over 5 phases
+        if (darkenPending && darkenStartPhase != null && darkenStartColor) {
+          const elapsedPhases = Math.max(0, phase - darkenStartPhase);
+          const progress = Math.min(elapsedPhases / darkenDurationPhases, 1);
+          const mix = darkenStartColor.clone().lerp(resetTargetColor, progress);
+          scene.background.copy(mix);
+          // Dim the directional light back down during darken
+          if (darkenStartIntensity != null) {
+            light.intensity = THREE.MathUtils.lerp(darkenStartIntensity, darkenTargetIntensity, progress);
+          }
+          if (progress >= 1) {
+            darkenPending = false;
+            console.log('Darken sky sequence complete');
+            // Ensure final light intensity is set
+            light.intensity = darkenTargetIntensity;
+            // Now restart the storm phases and state
+            phase = 0;
+            phaseTime = Date.now();
+            gameStarted = true;
+            oneTimeToggle = false;
+            lastDisintegrationTime = 0;
+            disintegratedObjects.clear();
+            resetPending = false;
+            resetting = false;
+            resetDone = false;
+            // keep floating disabled until phase threshold is reached again
+            floatingEnabled = false;
+            
+          }
+        }
+
+        // Scene reset can be auto (bright sky) or user-triggered via resetPending
+
+        // perform async reset without blocking the render loop
+        if (resetPending && !resetting) {
+          resetting = true;
+          resetCity().then(() => { resetDone = true; resetPending = false; resetting = false; });
         }
 
         //phase of the storm
-        const currentTime = Date.now();
-        //console.log("Current Time:", currentTime, "Phase Time:", phaseTime);
-        if (currentTime - phaseTime >= 5000) { // 1000 ms = 1 seconds
-          phase+=1;
-          console.log("Phase:", phase);
-          phaseTime = currentTime;
+        if (gameStarted) {
+          const currentTime = Date.now();
+          //console.log("Current Time:", currentTime, "Phase Time:", phaseTime);
+          if (currentTime - phaseTime >= 5000) { // 1000 ms = 1 seconds
+            phase+=1;
+            console.log("Phase:", phase);
+            phaseTime = currentTime;
+          }
         }
         
         for (let i = disintegrating.length - 1; i >= 0; i--) {
@@ -373,8 +758,14 @@
         disintegrating.splice(i, 1);
     }
 }
-        controls.update();
-        renderer.render(scene, camera);
+        // Update first-person camera if enabled
+        if (fpEnabled) {
+          updateFirstPersonCamera();
+          renderer.render(scene, fpCamera);
+        } else {
+          controls.update();
+          renderer.render(scene, camera);
+        }
       };
     </script>
   </head>

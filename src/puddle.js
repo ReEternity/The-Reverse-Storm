@@ -25,13 +25,59 @@ export async function createPuddle(scene, colorS, sizeS, amountS, visibility) {
          Math.random() * 400 - 200
       );
       
-      // Rotate to lay flat on ground
-      puddle.rotation.x = Math.PI / 2;
-      
       puddleGroup.add(puddle);
    }
    
    scene.add(puddleGroup);
    puddleGroup.visible = visibility;
+   //console.log("Puddles created");
    return puddleGroup;
+}
+
+// Returns an updater you can call each frame (delta in seconds) to fade/scale puddles in or out.
+export function animatePuddles(
+   puddleGroup,
+   {
+      fadeFrom = 0,
+      fadeTo = 0.6,
+      scaleFrom = 0.1,
+      scaleTo = 1.0,
+      duration = 2.0, // seconds
+      loop = false
+   } = {}
+) {
+   // Initialize starting state
+   puddleGroup.visible = true;
+   puddleGroup.children.forEach((mesh) => {
+      mesh.material.opacity = fadeFrom;
+      mesh.scale.setScalar(scaleFrom);
+   });
+
+   let elapsed = 0;
+
+   // Return an updater to be called with the frame's delta time
+   return function updatePuddles(deltaSeconds) {
+      elapsed += deltaSeconds;
+      const t = Math.min(elapsed / duration, 1);
+
+      // Smoothstep easing for a gentle start/stop
+      const smooth = t * t * (3 - 2 * t);
+      const opacity = fadeFrom + (fadeTo - fadeFrom) * smooth;
+      const scale = scaleFrom + (scaleTo - scaleFrom) * smooth;
+
+      puddleGroup.children.forEach((mesh) => {
+         mesh.material.opacity = opacity;
+         mesh.scale.setScalar(scale);
+      });
+
+      // If looping, reset when finished; otherwise signal completion
+      if (t >= 1) {
+         if (loop) {
+            elapsed = 0;
+         } else {
+            return false; // animation done
+         }
+      }
+      return true; // still animating
+   };
 }

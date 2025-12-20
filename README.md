@@ -16,12 +16,12 @@ dynamic scene with lightsource that comes from the lamps.
 
 # Common problems and solutions
 Since the 3D model was imported from an outside source, there are some difficulties with munipulating the objects.  The
-current solution to this was to use to find the names or commonalities of the object groups through selection to
-munipulate each object.
+current solution to this was to use selection to find the names or commonalities of the object groups to
+munipulate each object.  Also originally we were all working in the html file but ran into constant conflicts during the github merging, to fix this, we decided to make seperate js files that contribute to seperate parts.
 
 # Authors and acknowledgment
 Thanks to:
-Brian Ngan for finding and importing the model, object munipulation, object movement and dustruction, etc.
+Brian Ngan for finding and importing the model, object munipulation, object movement and destruction, etc.
 Kam Lun Cheung for adding the effects, rain, puddle, fog, etc, camera set up, video editing.
 
 Help from ChatGPT, copilot, Olivier Larose for floating effect, and Nazareno_rojas for the 3D model.

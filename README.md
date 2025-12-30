@@ -42,4 +42,4 @@ Night Time:
 ![Night Time](image-1.png)
 
 # Teaser
-[Watch the Teaser](teaser.mp4)
+[![Watch the Teaser](https://img.youtube.com/vi/AZgMhuHbzlw/0.jpg)](https://youtu.be/AZgMhuHbzlw)
